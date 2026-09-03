@@ -26,6 +26,9 @@ if(VANTA_ENABLE_SANITIZERS AND VANTA_ENABLE_THREAD_SANITIZER)
 endif()
 
 find_package(Threads REQUIRED)
+find_package(ixwebsocket CONFIG REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
+find_package(spdlog CONFIG REQUIRED)
 
 # ---------------------------------------------------------------------------
 # Compiler warnings
@@ -108,11 +111,29 @@ target_include_directories(
 target_compile_features(vanta_core PUBLIC cxx_std_20)
 target_link_libraries(vanta_core PUBLIC vanta_warnings vanta_sanitizers Threads::Threads)
 
+# Live market-data boundary. Keeping network dependencies out of vanta_core
+# preserves the future replay path's ability to link without socket behavior.
+add_library(
+    vanta_live STATIC
+    src/live/alpaca_config.cpp
+    src/live/alpaca_protocol.cpp
+    src/live/alpaca_recorder.cpp
+    src/live/ix_websocket.cpp)
+target_include_directories(vanta_live PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_compile_features(vanta_live PUBLIC cxx_std_20)
+target_link_libraries(
+    vanta_live
+    PUBLIC vanta_core nlohmann_json::nlohmann_json spdlog::spdlog
+    PRIVATE ixwebsocket::ixwebsocket vanta_warnings vanta_sanitizers)
+
 # ---------------------------------------------------------------------------
 # Executable
 # ---------------------------------------------------------------------------
 add_executable(vanta src/main.cpp)
 target_link_libraries(vanta PRIVATE vanta_core)
+
+add_executable(vanta_recorder src/recorder_main.cpp)
+target_link_libraries(vanta_recorder PRIVATE vanta_live vanta_warnings vanta_sanitizers)
 
 # ---------------------------------------------------------------------------
 # Tests
