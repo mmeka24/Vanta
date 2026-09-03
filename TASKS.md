@@ -149,14 +149,14 @@ a network.
 
 ### Build
 
-- [ ] Add SequenceNumber and Timestamp types
-- [ ] Add a fixed-point Price type backed by int64_t
-- [ ] Parse decimal prices without using floating point
-- [ ] Format Price back to its canonical decimal representation
-- [ ] Define RawFrame with sequence, source, arrival timestamp, and payload
-- [ ] Define Quote, Trade, ConnectionState, and OrderUpdate event types
-- [ ] Define one Event variant containing all typed events
-- [ ] Add equality and serialization helpers needed for deterministic tests
+- [x] Add SequenceNumber and Timestamp types
+- [x] Add a fixed-point Price type backed by int64_t
+- [x] Parse decimal prices without using floating point
+- [x] Format Price back to its canonical decimal representation
+- [x] Define RawFrame with sequence, source, arrival timestamp, and payload
+- [x] Define Quote, Trade, ConnectionState, and OrderUpdate event types
+- [x] Define one Event variant containing all typed events
+- [x] Add equality and serialization helpers needed for deterministic tests
 
 Use one documented scale for prices, such as 1 unit = 0.0001 USD. Overflow and
 invalid decimal input must return errors rather than silently rounding.

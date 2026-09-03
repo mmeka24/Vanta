@@ -78,14 +78,14 @@ configure_file(include/vanta/version.hpp.in
 # ---------------------------------------------------------------------------
 # vanta_core
 #
-# Header-only for now. Later chunks add sources here; nothing in this target
-# may perform network I/O.
+# Domain types shared by the live and replay paths. Nothing in this target may
+# perform network I/O or read the system clock.
 # ---------------------------------------------------------------------------
-add_library(vanta_core INTERFACE)
+add_library(vanta_core STATIC src/core/price.cpp src/events/event.cpp src/events/serialize.cpp)
 target_include_directories(
-    vanta_core INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/include" "${VANTA_GENERATED_INCLUDE_DIR}")
-target_compile_features(vanta_core INTERFACE cxx_std_20)
-target_link_libraries(vanta_core INTERFACE vanta_warnings vanta_sanitizers)
+    vanta_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" "${VANTA_GENERATED_INCLUDE_DIR}")
+target_compile_features(vanta_core PUBLIC cxx_std_20)
+target_link_libraries(vanta_core PUBLIC vanta_warnings vanta_sanitizers)
 
 # ---------------------------------------------------------------------------
 # Executable
