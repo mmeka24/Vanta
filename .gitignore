@@ -1,0 +1,57 @@
+# ---------------------------------------------------------------------------
+# Build output
+# ---------------------------------------------------------------------------
+build/
+cmake-build-*/
+out/
+CMakeUserPresets.json
+compile_commands.json
+.cache/
+.ccls-cache/
+
+# vcpkg manifest-mode install tree
+vcpkg_installed/
+
+# ---------------------------------------------------------------------------
+# Credentials — never commit these
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+config/secrets*
+config/*.local.*
+
+# ---------------------------------------------------------------------------
+# Logs and recorded market data
+#
+# raw.ndjson and decisions.ndjson are session output, not source. Small
+# sanitized replay fixtures under tests/fixtures/ are exempt below.
+# ---------------------------------------------------------------------------
+*.log
+logs/
+data/*
+!data/.gitkeep
+*.ndjson
+!tests/fixtures/**/*.ndjson
+
+# Generated reports
+tools/reports/output/
+
+# ---------------------------------------------------------------------------
+# Editor and OS
+# ---------------------------------------------------------------------------
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# ---------------------------------------------------------------------------
+# Python (reporting tools, added in Chunk 8)
+# ---------------------------------------------------------------------------
+__pycache__/
+*.pyc
+.venv/
+venv/

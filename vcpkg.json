@@ -1,0 +1,15 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "name": "vanta",
+  "version": "0.1.0",
+  "description": "Event-driven trading research engine",
+  "$comment": [
+    "Dependencies are pinned by builtin-baseline: every port resolves to the",
+    "version recorded at that vcpkg commit. Later chunks add nlohmann-json,",
+    "spdlog, ixwebsocket, and cpr when the code that uses them lands."
+  ],
+  "builtin-baseline": "30ef65cad98f08e7197c9a1656fbd871bcb72f2d",
+  "dependencies": [
+    "catch2"
+  ]
+}

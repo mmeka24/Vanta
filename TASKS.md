@@ -95,15 +95,16 @@ Create a clean C++ project that is easy to build and test on macOS and in CI.
 
 ### Build
 
-- [ ] Add the root CMakeLists.txt and require C++20
-- [ ] Add CMakePresets.json with debug and release presets
-- [ ] Add vcpkg.json with pinned project dependencies
-- [ ] Add src/main.cpp that prints the Vanta version and exits successfully
-- [ ] Add Catch2 with one passing smoke test
-- [ ] Add .clang-format and strict compiler warnings
-- [ ] Add AddressSanitizer and UndefinedBehaviorSanitizer in the debug preset
-- [ ] Add .gitignore for build output, credentials, logs, and recorded data
-- [ ] Add GitHub Actions to configure, build, and test
+- [x] Add the root CMakeLists.txt and require C++20
+- [x] Add CMakePresets.json with debug and release presets
+- [x] Add vcpkg.json with pinned project dependencies
+- [x] Add src/main.cpp that prints the Vanta version and exits successfully
+- [x] Add Catch2 with one passing smoke test
+- [x] Add .clang-format and strict compiler warnings
+- [x] Add AddressSanitizer and UndefinedBehaviorSanitizer in the debug preset
+- [x] Add .gitignore for build output, credentials, logs, and recorded data
+- [ ] Add GitHub Actions to configure, build, and test (workflow written; unverified
+      until the first push runs it)
 
 ### Expected structure
 

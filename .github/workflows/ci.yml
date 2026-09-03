@@ -1,0 +1,66 @@
+name: ci
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+# Pinned to the same commit as builtin-baseline in vcpkg.json so CI resolves
+# the identical dependency versions as a local build.
+env:
+  VCPKG_COMMIT: 30ef65cad98f08e7197c9a1656fbd871bcb72f2d
+
+jobs:
+  build-and-test:
+    name: ${{ matrix.os }} / debug
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install build tools (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build cmake clang-format
+
+      - name: Install build tools (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ninja cmake clang-format
+
+      - name: Check out vcpkg
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git "$RUNNER_TEMP/vcpkg"
+          git -C "$RUNNER_TEMP/vcpkg" checkout "$VCPKG_COMMIT"
+          "$RUNNER_TEMP/vcpkg/bootstrap-vcpkg.sh" -disableMetrics
+          echo "VCPKG_ROOT=$RUNNER_TEMP/vcpkg" >> "$GITHUB_ENV"
+
+      - name: Cache vcpkg binaries
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/vcpkg/archives
+          key: vcpkg-${{ matrix.os }}-${{ env.VCPKG_COMMIT }}-${{ hashFiles('vcpkg.json') }}
+          restore-keys: vcpkg-${{ matrix.os }}-${{ env.VCPKG_COMMIT }}-
+
+      - name: Check formatting
+        run: |
+          find include src tests -type f \( -name '*.cpp' -o -name '*.hpp' \) \
+            -print0 | xargs -0 clang-format --dry-run --Werror
+
+      - name: Configure (debug)
+        run: cmake --preset debug
+
+      - name: Build (debug)
+        run: cmake --build --preset debug
+
+      - name: Test (debug)
+        run: ctest --preset debug
+
+      - name: Run the executable
+        run: ./build/debug/vanta
