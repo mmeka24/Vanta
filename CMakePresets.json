@@ -29,6 +29,17 @@
       }
     },
     {
+      "name": "tsan",
+      "displayName": "Debug (ThreadSanitizer)",
+      "description": "Debug build with ThreadSanitizer. Mutually exclusive with the debug preset's ASan/UBSan.",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "VANTA_ENABLE_SANITIZERS": "OFF",
+        "VANTA_ENABLE_THREAD_SANITIZER": "ON"
+      }
+    },
+    {
       "name": "release",
       "displayName": "Release",
       "description": "Optimized build with sanitizers disabled.",
@@ -45,6 +56,10 @@
       "configurePreset": "debug"
     },
     {
+      "name": "tsan",
+      "configurePreset": "tsan"
+    },
+    {
       "name": "release",
       "configurePreset": "release"
     }
@@ -53,6 +68,16 @@
     {
       "name": "debug",
       "configurePreset": "debug",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "noTestsAction": "error"
+      }
+    },
+    {
+      "name": "tsan",
+      "configurePreset": "tsan",
       "output": {
         "outputOnFailure": true
       },

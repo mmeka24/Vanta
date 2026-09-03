@@ -197,14 +197,14 @@ the exact external payload.
 
 ### Build
 
-- [ ] Implement a generic bounded blocking queue
-- [ ] Support push, pop, close, capacity, and current size
-- [ ] Define explicit behavior when closed
-- [ ] Implement an append-only NDJSON RawRecorder
-- [ ] Store sequence, source, arrival timestamp, and exact payload
-- [ ] Flush cleanly during shutdown
-- [ ] Never record API keys or authentication messages
-- [ ] Add a small queue-depth metric
+- [x] Implement a generic bounded blocking queue
+- [x] Support push, pop, close, capacity, and current size
+- [x] Define explicit behavior when closed
+- [x] Implement an append-only NDJSON RawRecorder
+- [x] Store sequence, source, arrival timestamp, and exact payload
+- [x] Flush cleanly during shutdown
+- [x] Never record API keys or authentication messages
+- [x] Add a small queue-depth metric
 
 ### Tests
 

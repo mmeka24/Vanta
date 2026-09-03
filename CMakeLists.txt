@@ -14,6 +14,18 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(VANTA_BUILD_TESTS "Build the Vanta test suite" ON)
 option(VANTA_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" ON)
 option(VANTA_ENABLE_SANITIZERS "Enable AddressSanitizer and UndefinedBehaviorSanitizer" OFF)
+option(VANTA_ENABLE_THREAD_SANITIZER "Enable ThreadSanitizer" OFF)
+
+# ThreadSanitizer shares shadow-memory machinery with AddressSanitizer and the
+# two cannot be linked into the same binary, so they get separate presets.
+if(VANTA_ENABLE_SANITIZERS AND VANTA_ENABLE_THREAD_SANITIZER)
+    message(
+        FATAL_ERROR
+            "VANTA_ENABLE_SANITIZERS and VANTA_ENABLE_THREAD_SANITIZER are mutually exclusive. "
+            "Use the debug preset for ASan/UBSan or the tsan preset for ThreadSanitizer.")
+endif()
+
+find_package(Threads REQUIRED)
 
 # ---------------------------------------------------------------------------
 # Compiler warnings
@@ -56,15 +68,19 @@ endif()
 # ---------------------------------------------------------------------------
 add_library(vanta_sanitizers INTERFACE)
 
-if(VANTA_ENABLE_SANITIZERS)
+if(VANTA_ENABLE_SANITIZERS OR VANTA_ENABLE_THREAD_SANITIZER)
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
-        set(VANTA_SANITIZER_FLAGS -fsanitize=address,undefined -fno-omit-frame-pointer
-                                  -fno-sanitize-recover=undefined)
+        if(VANTA_ENABLE_THREAD_SANITIZER)
+            set(VANTA_SANITIZER_FLAGS -fsanitize=thread -fno-omit-frame-pointer)
+        else()
+            set(VANTA_SANITIZER_FLAGS -fsanitize=address,undefined -fno-omit-frame-pointer
+                                      -fno-sanitize-recover=undefined)
+        endif()
         target_compile_options(vanta_sanitizers INTERFACE ${VANTA_SANITIZER_FLAGS} -g)
         target_link_options(vanta_sanitizers INTERFACE ${VANTA_SANITIZER_FLAGS})
     else()
-        message(WARNING "VANTA_ENABLE_SANITIZERS is ON but the sanitizers are not configured "
-                        "for compiler ${CMAKE_CXX_COMPILER_ID}; continuing without them.")
+        message(WARNING "A sanitizer was requested but none are configured for compiler "
+                        "${CMAKE_CXX_COMPILER_ID}; continuing without them.")
     endif()
 endif()
 
@@ -81,11 +97,16 @@ configure_file(include/vanta/version.hpp.in
 # Domain types shared by the live and replay paths. Nothing in this target may
 # perform network I/O or read the system clock.
 # ---------------------------------------------------------------------------
-add_library(vanta_core STATIC src/core/price.cpp src/events/event.cpp src/events/serialize.cpp)
+add_library(
+    vanta_core STATIC
+    src/core/price.cpp
+    src/events/event.cpp
+    src/events/serialize.cpp
+    src/record/raw_recorder.cpp)
 target_include_directories(
     vanta_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" "${VANTA_GENERATED_INCLUDE_DIR}")
 target_compile_features(vanta_core PUBLIC cxx_std_20)
-target_link_libraries(vanta_core PUBLIC vanta_warnings vanta_sanitizers)
+target_link_libraries(vanta_core PUBLIC vanta_warnings vanta_sanitizers Threads::Threads)
 
 # ---------------------------------------------------------------------------
 # Executable
