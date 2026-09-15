@@ -48,7 +48,21 @@ Alpaca WebSockets -> Network threads -> Event queue -> Trading engine
 
 ## Current status
 
-Planning and project setup. Start with the first unchecked item in `TASKS.md`.
+The product direction is now Vanta Hedge, a Python protective-put analyzer
+described in `ARCHITECTURE.md` and `TASKS.md`. The C++ pipeline above remains
+the market-data recorder; see `python/` for the product work.
+
+## Python setup (Vanta Hedge)
+
+```sh
+cd python
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+cp .env.example .env   # fill in local values; never commit .env
+streamlit run app.py
+pytest
+```
 
 ## Safety
 

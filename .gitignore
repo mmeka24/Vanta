@@ -49,9 +49,20 @@ tools/reports/output/
 *.swp
 
 # ---------------------------------------------------------------------------
-# Python (reporting tools, added in Chunk 8)
+# Python (Vanta Hedge, python/)
 # ---------------------------------------------------------------------------
 __pycache__/
 *.pyc
 .venv/
 venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# SQLite databases (analysis and paper-order persistence)
+*.db
+*.sqlite
+*.sqlite3
+
+# Generated reports and exported charts
+python/reports/
