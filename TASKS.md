@@ -1,637 +1,830 @@
-# Vanta V1 Build Plan
+Vanta Hedge Build Plan
 
-This file is the source of truth for building Vanta. Complete one chunk at a
-time. Do not ask an AI coding assistant to implement the entire project in one
-prompt.
+This file is the source of truth for the Vanta Hedge pivot. Complete one chunk at a time. The existing C++ recorder is preserved; new product work begins as a small Python prototype.
 
-## What V1 is
+What the first release is
 
-Vanta V1 is a single-symbol, event-driven trading research engine. It records
-live AAPL market data from Alpaca, replays that data through the exact same C++
-engine, calculates a small set of market features, generates deterministic trade
-proposals, applies risk checks, simulates execution, and can later submit tightly
-limited orders to an Alpaca paper account.
+Vanta Hedge V1 accepts a manually entered stock position, retrieves current Alpaca option data, compares protective puts under a user-defined downside scenario and budget, displays a payoff comparison, and can submit a separately confirmed Alpaca paper order.
 
-V1 is successful when one recorded session can be replayed twice and produce
-identical decisions, orders, fills, positions, and P&L.
+V1 is successful when a user can complete that workflow without depending on a trading strategy, replay engine, Monte Carlo model or live-money account.
 
-## What V1 is not
+What V1 is not
 
-- A profitable trading system
-- A production high-frequency trading platform
-- A real-money trading bot
-- An options engine
-- A multi-symbol portfolio system
-- A full-depth exchange order book
-- An LLM with permission to place trades
-- A replacement for professional market data
+An autonomous trading bot
 
-Do not add these features before V1 is finished.
+A stock-price prediction system
 
-## Fixed technical choices
+A complete portfolio optimizer
 
-| Area | V1 choice |
-| --- | --- |
-| Core language | C++20 |
-| Build system | CMake with CMake presets |
-| Dependencies | vcpkg |
-| Tests | Catch2 |
-| JSON | nlohmann/json |
-| WebSockets | IXWebSocket |
-| HTTP orders | CPR |
-| Logging | spdlog |
-| Data format | NDJSON |
-| Analysis | Python, pandas, matplotlib |
-| Market | US equities |
-| Symbol | AAPL |
-| Broker | Simulated broker, then Alpaca paper |
-| Concurrency | Network I/O threads and one state-owning engine thread |
-| Price storage | Signed 64-bit fixed-point integers |
-| Live trading | Explicitly disabled in V1 |
+A production brokerage platform
 
-## Rules for every AI coding session
+A real-money trading application
 
-Give the assistant the base prompt below followed by exactly one chunk prompt.
+A Monte Carlo or machine-learning project
 
-~~~text
-Read README.md, ARCHITECTURE.md, and TASKS.md before changing anything.
+A full options-pricing engine
 
-Implement only the requested chunk. Do not implement later chunks, redesign the
-architecture, or add unrelated abstractions. Preserve existing behavior and
-tests. Never place credentials in source code, logs, fixtures, or commits.
-Never enable real-money trading.
+A replacement for professional market data
 
-Before coding, briefly state:
-1. what files you expect to change,
-2. the interfaces you will introduce,
-3. how you will test the work.
+Fixed choices for the prototype
+
+Area
+
+Choice
+
+Existing ingestion
+
+C++20 recorder
+
+Product and calculations
+
+Python 3.12
+
+Initial UI
+
+Streamlit
+
+Market and order API
+
+Alpaca
+
+Orders
+
+Alpaca paper only
+
+Domain validation
+
+Pydantic
+
+Data calculations
+
+Pandas, NumPy, Decimal
+
+Charts
+
+Plotly
+
+Persistence
+
+SQLite with SQLAlchemy
+
+Python tests
+
+Pytest
+
+Initial strategy
+
+Protective put only
+
+Rules for every coding session
+
+Give the coding assistant this instruction followed by exactly one chunk:
+
+Read README.md, ARCHITECTURE.md and TASKS.md before changing anything.
+Implement only the requested chunk. Preserve completed C++ recorder behavior and
+tests. Do not add later quantitative features or unrelated abstractions. Never
+place credentials in source, logs, fixtures or commits. Never enable live-money
+trading.
+
+Before coding, state:
+1. files expected to change,
+2. interfaces being added or changed,
+3. tests that will prove the work.
 
 After coding:
-1. format the changed code,
-2. build from a clean build directory,
-3. run the complete test suite,
-4. report the commands and results,
-5. list changed files and any remaining limitations.
-
-Do not mark a TASKS.md checkbox complete unless its acceptance criteria pass.
-If an assumption is unclear, stop and ask instead of silently expanding scope.
-~~~
-
-Commit after each completed chunk. Suggested commit format:
-
-~~~text
-feat(component): short description
-test(component): short description
-fix(component): short description
-~~~
-
----
-
-## Chunk 0 — Project foundation
-
-### Goal
+1. format changed code,
+2. build affected C++ targets when applicable,
+3. run the complete affected test suites,
+4. report commands and results,
+5. list changed files and remaining limitations.
 
-Create a clean C++ project that is easy to build and test on macOS and in CI.
+Do not mark a checkbox complete unless its acceptance criteria pass. Stop and
+ask if an assumption would materially change the architecture or scope.
 
-### Build
+Commit after each completed chunk.
 
-- [x] Add the root CMakeLists.txt and require C++20
-- [x] Add CMakePresets.json with debug and release presets
-- [x] Add vcpkg.json with pinned project dependencies
-- [x] Add src/main.cpp that prints the Vanta version and exits successfully
-- [x] Add Catch2 with one passing smoke test
-- [x] Add .clang-format and strict compiler warnings
-- [x] Add AddressSanitizer and UndefinedBehaviorSanitizer in the debug preset
-- [x] Add .gitignore for build output, credentials, logs, and recorded data
-- [ ] Add GitHub Actions to configure, build, and test (workflow written; unverified
-      until the first push runs it)
-
-### Expected structure
+Completed foundation — preserve this work
 
-~~~text
-vanta/
-├── CMakeLists.txt
-├── CMakePresets.json
-├── vcpkg.json
-├── include/vanta/
-├── src/main.cpp
-├── tests/
-├── config/
-├── data/
-└── tools/reports/
-~~~
-
-### Acceptance criteria
+C++ project foundation
 
-- A clean debug configure and build succeeds
-- CTest reports one passing test
-- Running the executable prints a version
-- No API keys or generated build files are tracked
-- CI runs the same build and tests
-
-### Chunk prompt
+C++20, CMake presets and vcpkg configuration
 
-~~~text
-Implement Chunk 0 from TASKS.md. Set up the minimal C++20/CMake/vcpkg project,
-one executable, one Catch2 smoke test, debug sanitizers, formatting, warnings,
-.gitignore, and GitHub Actions. Keep main.cpp trivial. Do not add trading logic
-or Alpaca code.
-~~~
+Catch2 test setup
 
----
+Strict formatting and compiler warnings
 
-## Chunk 1 — Core event and money types
+Debug sanitizer configuration
 
-### Goal
+Git ignore rules for credentials, data and build output
 
-Define the internal language used by every later component without connecting to
-a network.
+Verify the existing GitHub Actions workflow after the first push
 
-### Build
+Core types and recording
 
-- [x] Add SequenceNumber and Timestamp types
-- [x] Add a fixed-point Price type backed by int64_t
-- [x] Parse decimal prices without using floating point
-- [x] Format Price back to its canonical decimal representation
-- [x] Define RawFrame with sequence, source, arrival timestamp, and payload
-- [x] Define Quote, Trade, ConnectionState, and OrderUpdate event types
-- [x] Define one Event variant containing all typed events
-- [x] Add equality and serialization helpers needed for deterministic tests
+Sequence and timestamp types
 
-Use one documented scale for prices, such as 1 unit = 0.0001 USD. Overflow and
-invalid decimal input must return errors rather than silently rounding.
+Fixed-point price type
 
-### Tests
+Raw frame representation
 
-- Valid positive price parsing and formatting
-- Minimum tick precision
-- Too many decimal places
-- Negative values where disallowed
-- int64 overflow
-- Equality for event values
-- Stable serialization output
+Typed base event definitions
 
-### Acceptance criteria
+Bounded blocking queue
 
-- Domain types contain no Alpaca-specific networking code
-- Price calculations do not use float or double
-- All edge-case tests pass under sanitizers
+Append-only NDJSON RawRecorder
 
-### Chunk prompt
+Credential-payload redaction protection
 
-~~~text
-Implement Chunk 1 from TASKS.md. Create the fixed-point Price type, RawFrame,
-typed market events, and the Event variant with focused unit tests. Use explicit
-error handling for malformed prices and overflow. Do not add queues, sockets,
-market state, strategies, or brokers.
-~~~
+Queue and recorder tests
 
----
+Current Alpaca recorder
 
-## Chunk 2 — Bounded queue and raw recorder
+IWebSocket abstraction around IXWebSocket
 
-### Goal
+Environment-based Alpaca configuration
 
-Move raw frames safely between producer threads and a consumer while preserving
-the exact external payload.
+Sanitized missing-configuration errors
 
-### Build
+Alpaca authentication and subscription message builders
 
-- [x] Implement a generic bounded blocking queue
-- [x] Support push, pop, close, capacity, and current size
-- [x] Define explicit behavior when closed
-- [x] Implement an append-only NDJSON RawRecorder
-- [x] Store sequence, source, arrival timestamp, and exact payload
-- [x] Flush cleanly during shutdown
-- [x] Never record API keys or authentication messages
-- [x] Add a small queue-depth metric
+Minimal control, authentication, market-data and error classification
 
-### Tests
+AlpacaRecorderClient
 
-- FIFO order
-- Producer blocks when full and continues when space appears
-- Consumer wakes when data arrives
-- Waiting threads wake when the queue closes
-- Recorder round-trips payloads containing escaped JSON
-- Multiple frames preserve sequence order
-- Closing and flushing does not lose accepted frames
+Exponential reconnect backoff with a bounded maximum
 
-### Acceptance criteria
+Runnable vanta_recorder
 
-- ThreadSanitizer or an equivalent concurrency test reports no data race
-- A generated raw log can be parsed one line at a time
-- The stored payload is byte-for-byte equal to the input payload
+Graceful Ctrl-C shutdown
 
-### Chunk prompt
+Existing suite passes with 55 tests
 
-~~~text
-Implement Chunk 2 from TASKS.md. Add a bounded blocking queue and append-only
-NDJSON RawRecorder with concurrency and round-trip tests. Define clean close and
-shutdown semantics. Do not connect to Alpaca or parse market messages yet.
-~~~
+Verify the test-stream connection manually
 
----
+Verify a market-hours AAPL recording manually
 
-## Chunk 3 — Alpaca market-data recorder
+Confirm whether reconnect boundaries are represented inside the raw log
 
-### Goal
+Add fsync or document the accepted last-write-loss durability window
 
-Record real AAPL quote and trade frames without making any trading decisions.
+Push and verify CI before changing recorder behavior
 
-### Build
+Recorder checkpoint acceptance
 
-- [ ] Load the feed URL, key ID, secret, feed, and symbol from environment
-- [ ] Fail safely when required configuration is missing
-- [ ] Connect to the Alpaca market-data WebSocket
-- [ ] Authenticate without logging credentials
-- [ ] Subscribe only to AAPL quotes and trades
-- [ ] Put received frames into the bounded queue
-- [ ] Record raw frames through RawRecorder
-- [ ] Add connection, authentication, subscription, and disconnect logs
-- [ ] Handle SIGINT with a graceful queue close and recorder flush
-- [ ] Add exponential reconnect backoff with a maximum delay
-- [ ] Mark gaps and reconnections explicitly in the raw log
+Existing tests continue to pass.
 
-### Manual verification
+Credentials never appear in logs or fixtures.
 
-First use Alpaca's always-available test stream. Then run against the paper
-market-data stream during market hours.
+The current recorder remains runnable during the product pivot.
 
-### Acceptance criteria
+New Python work does not require rewriting the recorder.
 
-- Missing credentials produce a clear error and no crash
-- Credentials never appear in console or data logs
-- The process records AAPL frames and exits cleanly after Ctrl-C
-- A disconnect cannot silently continue as if data were current
-- This chunk contains no strategy or order-submission code
+Chunk 1 — Python product foundation
 
-### Chunk prompt
+Goal
 
-~~~text
-Implement Chunk 3 from TASKS.md. Build a recorder-only Alpaca WebSocket client
-that loads secrets from environment variables, authenticates, subscribes to AAPL
-quotes and trades, pushes frames through the existing queue, and writes raw
-NDJSON. Add graceful shutdown and bounded reconnect backoff. Never submit an
-order and never log credentials.
-~~~
+Create an independently testable Python package beside the existing C++ application.
 
----
+Build
 
-## Chunk 4 — Parser and deterministic replay source
+Add python/pyproject.toml
 
-### Goal
+Add python/app.py with a placeholder Streamlit page
 
-Turn recorded raw data into typed events and make a file behave like a live event
-source.
+Add python/vanta_hedge/ package directories
 
-### Build
+Add Ruff or Black formatting configuration
 
-- [ ] Define IEventSource with a single ordered event interface
-- [ ] Wrap live input behind LiveEventSource
-- [ ] Implement ReplayEventSource for raw.ndjson
-- [ ] Parse Alpaca quote messages into Quote
-- [ ] Parse Alpaca trade messages into Trade
-- [ ] Parse connection and status messages
-- [ ] Return structured parse errors for malformed or unsupported input
-- [ ] Preserve original sequence numbers and recorded timestamps
-- [ ] Add sanitized fixtures captured from the real recorder
-- [ ] Add a replay speed mode: immediate or recorded timing
+Add Pytest with one smoke test
 
-Recorded timing is for demonstrations only. Decision logic must use event time,
-not wall-clock delays.
+Add .env.example containing names but no values
 
-### Tests
+Extend .gitignore for Python caches, .env, SQLite and generated reports
 
-- Valid quote and trade fixtures
-- Missing fields
-- Wrong field types
-- Unknown message types
-- Empty and truncated log lines
-- Out-of-order or duplicate sequences
-- Replaying the same fixture returns identical typed events
+Document Python setup commands
 
-### Acceptance criteria
+Acceptance criteria
 
-- Live and replay sources produce the same internal event types
-- Parser failures are observable and cannot crash the process
-- Replay performs no network calls
+pip install -e . succeeds from python/.
 
-### Chunk prompt
+The placeholder application starts.
 
-~~~text
-Implement Chunk 4 from TASKS.md. Add IEventSource, LiveEventSource,
-ReplayEventSource, and strict parsing for the recorded Alpaca message types.
-Preserve sequence numbers and timestamps and add sanitized real-frame fixtures.
-Do not calculate features or submit orders.
-~~~
+Pytest reports one passing test.
 
----
+The existing C++ build and 55 tests still pass.
 
-## Chunk 5 — Engine, clock, market state, and features
+No new code calls Alpaca.
 
-### Goal
+Chunk prompt
 
-Process all state changes on one engine thread and calculate features using only
-information already observed.
+Implement Chunk 1 from TASKS.md. Add the minimal Python package, Streamlit entry
+point, formatting configuration, environment example and one Pytest smoke test.
+Do not add financial calculations, Alpaca integration or modify working C++
+recorder behavior.
 
-### Build
+Chunk 2 — Domain models and protective-put calculations
 
-- [ ] Add an injectable Clock interface with live and replay implementations
-- [ ] Add the single-threaded Engine event loop
-- [ ] Make the engine the sole owner of mutable trading state
-- [ ] Track latest bid, ask, sizes, last trade, and update timestamps
-- [ ] Reject incomplete, crossed, locked, or invalid quotes as configured
-- [ ] Mark market state stale after a configured timeout
-- [ ] Calculate spread and midpoint
-- [ ] Calculate quote imbalance
-- [ ] Implement documented trade signing
-- [ ] Calculate rolling signed trade-flow imbalance
-- [ ] Write deterministic feature records to decisions.ndjson
-- [ ] Record source sequence numbers for every computed feature
+Goal
 
-### Tests
+Implement the financial core against static fixtures before connecting it to a network.
 
-Use hand-calculated examples for every feature. Verify that future events cannot
-affect previous outputs and that stale state becomes non-tradable using a fake
-clock.
+Build
 
-### Acceptance criteria
+Add EquityPosition
 
-- Only the engine thread mutates MarketState
-- Decision code never calls the system clock directly
-- A fixture replay produces the expected feature values
-- Replaying twice produces byte-identical feature logs
+Add OptionQuote
 
-### Chunk prompt
+Add OptionContract
 
-~~~text
-Implement Chunk 5 from TASKS.md. Add the injected clocks, single-threaded engine,
-MarketState, initial feature calculations, staleness handling, and deterministic
-feature logging. Prove the math with hand-calculated tests. Do not add a trading
-strategy or broker.
-~~~
+Add OptionLeg
 
----
+Add HedgeCandidate
 
-## Chunk 6 — Baseline strategy and risk gate
+Add AnalysisRequest and ScenarioResult
 
-### Goal
+Use Decimal for prices, premiums and order-facing money
 
-Generate explainable trade proposals and ensure no proposal can become an order
-without passing risk.
+Calculate scenario price and unhedged stock P&L
 
-### Build
+Calculate long-put premium and expiration payoff
 
-- [ ] Define TradeProposal separately from OrderRequest
-- [ ] Define IStrategy and IRiskManager interfaces
-- [ ] Implement one deterministic threshold-based baseline strategy
-- [ ] Make strategy parameters configuration values
-- [ ] Add maximum order quantity
-- [ ] Add maximum absolute position
-- [ ] Add maximum spread
-- [ ] Add market-hours check
-- [ ] Reject stale, disconnected, or invalid market state
-- [ ] Add maximum daily loss
-- [ ] Add maximum order rate
-- [ ] Add a global kill switch defaulting to safe
-- [ ] Log proposal inputs, approval, and every rejection reason
+Calculate hedged P&L, loss avoided and protection per dollar
 
-The baseline strategy exists to exercise the infrastructure. Do not claim it has
-predictive edge.
+Generate chart-ready payoff points
 
-### Tests
+Add a sanitized static option-chain fixture
 
-Create table-driven tests where each risk rule independently approves or rejects.
-Also test multiple simultaneous failures and verify stable rejection ordering.
+Tests
 
-### Acceptance criteria
+Put expires worthless above its strike
 
-- Strategy code cannot call a broker
-- Risk is the only path from TradeProposal to OrderRequest
-- Every rejection is visible and reproducible
-- Kill switch and stale data always prevent new orders
+Put is in the money below its strike
 
-### Chunk prompt
+Premium is multiplied by 100
 
-~~~text
-Implement Chunk 6 from TASKS.md. Add a simple deterministic baseline strategy,
-TradeProposal, OrderRequest, and a composable risk gate with every listed rule.
-Add table-driven tests and deterministic decision logging. The strategy must not
-access any broker, and the kill switch must default to safe.
-~~~
+Multiple contracts and non-100-share positions
 
----
+Zero or negative invalid inputs
 
-## Chunk 7 — Simulated broker and portfolio accounting
+Budget boundary
 
-### Goal
+Scenario at, above and below the strike
 
-Complete an end-to-end replay without contacting Alpaca's trading API.
+Exact Decimal results
 
-### Build
+Acceptance criteria
 
-- [ ] Define IBroker
-- [ ] Define order states and legal state transitions
-- [ ] Implement SimulatedBroker
-- [ ] Forbid fills from events at or before order submission
-- [ ] Support acknowledgements, rejections, partial fills, fills, and cancels
-- [ ] Model configurable latency, slippage, and transaction costs
-- [ ] Track cash, position, average cost, realized P&L, and unrealized P&L
-- [ ] Log orders, transitions, fills, and portfolio snapshots
-- [ ] Reject impossible or duplicate state transitions
+All calculations run without network access.
 
-### Tests
+Domain code imports neither Alpaca nor Streamlit.
 
-- Market and limit order behavior
-- No look-ahead fills
-- Partial fills
-- Cancel before fill
-- Fill/cancel race ordering
-- Duplicate updates
-- Long-to-flat and long-to-short accounting
-- Short-to-flat and short-to-long accounting
-- Realized plus unrealized P&L reconciliation
+Results match hand-calculated examples.
 
-### Acceptance criteria
+Output is explicitly labeled as an expiration scenario.
 
-- A recorded session runs through the full engine offline
-- No network access occurs during replay
-- Portfolio accounting reconciles after every fill
-- Two identical replays produce byte-identical decision logs
+Chunk prompt
 
-### Chunk prompt
+Implement Chunk 2 from TASKS.md. Add the domain models and protective-put
+expiration-scenario calculations with a static fixture and hand-calculated
+Pytest cases. Represent a candidate as option legs even though V1 uses one leg.
+Do not connect to Alpaca or build the final interface.
 
-~~~text
-Implement Chunk 7 from TASKS.md. Add IBroker, the tested order state machine,
-SimulatedBroker, no-look-ahead fill logic, and portfolio/P&L accounting. Run a
-complete offline replay. Do not add Alpaca order submission yet.
-~~~
+Chunk 3 — Candidate generation, filtering and quote quality
 
----
+Goal
 
-## Chunk 8 — Python research report
+Turn an option-chain fixture into safe, ranked protective-put candidates.
 
-### Goal
+Build
 
-Turn one decisions log into an honest, readable evaluation of engine behavior.
+Add ProtectivePutGenerator
 
-### Build
+Determine contract count from protected shares
 
-- [ ] Add a Python requirements file or pyproject
-- [ ] Read decisions.ndjson without reproducing C++ strategy logic
-- [ ] Report total return and realized/unrealized P&L
-- [ ] Report maximum drawdown and exposure
-- [ ] Report turnover, number of trades, and win rate
-- [ ] Report fill rate, slippage, and decision-to-fill latency
-- [ ] Summarize risk rejection counts
-- [ ] Plot P&L, position, drawdown, and trade markers
-- [ ] Print data-quality warnings and session configuration
+Filter puts by underlying and expiration window
 
-### Tests
+Filter by maximum premium budget
 
-Use a tiny known decisions fixture and verify exact summary metrics.
+Exclude missing, non-positive and crossed quotes
 
-### Acceptance criteria
+Exclude expired contracts
 
-- One command produces a summary file and plots
-- Python only analyzes C++ output
-- Empty sessions and rejected-only sessions work
-- Reports clearly label results as simulated
+Add configurable quote-age threshold
 
-### Chunk prompt
+Warn for zero bids, wide spreads and indicative feeds
 
-~~~text
-Implement Chunk 8 from TASKS.md. Build a small Python reporting tool for
-decisions.ndjson with tested metrics and plots. Python must not contain a copy of
-the strategy, risk logic, or fill model. Label all results as simulated.
-~~~
+Rank by protection per dollar and expose alternate sort metrics
 
----
+Preserve rejection reasons for excluded contracts
 
-## Chunk 9 — Alpaca paper broker
+Acceptance criteria
 
-### Goal
+A fixture produces the expected eligible candidates in stable order.
 
-Replace only the broker boundary so the tested engine can place paper orders.
+Every exclusion has a deterministic reason.
 
-### Build
+Purchased puts use the ask for estimated premium.
 
-- [ ] Implement AlpacaPaperBroker behind IBroker
-- [ ] Use the paper endpoint only and fail closed for any other endpoint
-- [ ] Submit and cancel paper orders
-- [ ] Receive asynchronous trade updates
-- [ ] Map Alpaca states into the internal order state machine
-- [ ] Use client order IDs for idempotency
-- [ ] Reconcile open orders, positions, and cash after reconnect
-- [ ] Disable submission until market and account state are fresh
-- [ ] Add strict maximum quantity and notional limits
-- [ ] Add a second runtime arming flag in addition to the kill switch
-- [ ] Start with shadow mode where orders are logged but never sent
+The generator performs no network call and submits no order.
 
-### Verification sequence
+Chunk prompt
 
-1. Run shadow mode for a complete session.
-2. Confirm proposed orders and risk decisions in the log.
-3. Restart and verify account reconciliation.
-4. Arm paper submission with quantity limited to one share.
-5. Submit, observe, and cancel one controlled paper order.
-6. Disable submission again.
-7. Replay the recorded session and compare decisions.
+Implement Chunk 3 from TASKS.md. Build protective-put candidate generation,
+budget and expiration filtering, quote validation, warnings and stable ranking
+against the existing fixture. Keep generation separate from payoff calculation.
 
-### Acceptance criteria
+Chunk 4 — Alpaca market-data adapter
 
-- Live-money endpoints are rejected by code
-- Restarting cannot duplicate an earlier order
-- Unknown broker state disables further submission
-- Paper fills flow through the same accounting path as simulated fills
-- Shadow and paper modes are explicit in every log
+Goal
 
-### Chunk prompt
+Replace the static market-data fixture with current Alpaca snapshots while preserving the same domain interfaces.
 
-~~~text
-Implement Chunk 9 from TASKS.md. Add AlpacaPaperBroker behind IBroker with
-paper-endpoint enforcement, idempotent client order IDs, asynchronous order
-updates, reconciliation, shadow mode, and two-step arming. Default to no order
-submission. Never add or enable a live-money endpoint.
-~~~
+Build
 
----
+Add an IMarketDataAdapter protocol
 
-## Chunk 10 — Reliability and final proof
+Add a fixture-backed implementation
 
-### Goal
+Add AlpacaMarketDataAdapter
 
-Make failures visible and produce evidence that the architecture works as
-claimed.
+Retrieve the current underlying snapshot
 
-### Build
+Retrieve and paginate the option chain
 
-- [ ] Commit a small sanitized golden raw replay fixture
-- [ ] Store the expected decisions hash
-- [ ] Replay twice in CI and fail if hashes differ
-- [ ] Fuzz the external JSON parser
-- [ ] Test queue overflow and a deliberately slow engine
-- [ ] Test disconnect, stale state, and reconnect recovery
-- [ ] Test interrupted log writes and truncated final lines
-- [ ] Expose queue depth, processing lag, parse failures, and reconnect count
-- [ ] Add a session manifest containing configuration and code version
-- [ ] Document setup, replay, paper mode, and emergency shutdown
-- [ ] Record a short demo showing live capture followed by identical replay
+Filter contract type and expiration at the request boundary
 
-### Acceptance criteria
+Convert Alpaca responses into internal domain models
 
-- CI automatically detects nondeterminism
-- Overload, stale data, and disconnects disable trading
-- A clean checkout can reproduce the golden replay
-- README instructions work without undocumented steps
-- The demo supports every technical claim made on the resume
+Record quote timestamp and source feed
 
-### Chunk prompt
+Add timeouts, rate-limit handling and sanitized errors
 
-~~~text
-Implement Chunk 10 from TASKS.md. Add the golden replay determinism test,
-failure-mode tests, operational metrics, session manifest, final documentation,
-and demo instructions. Verify all existing tests under sanitizers. Do not expand
-the product scope.
-~~~
+Add fixture-based adapter tests
 
----
+Add one opt-in sandbox integration test
 
-## V1 completion checklist
+Acceptance criteria
 
-V1 is complete only when all of these are true:
+The application can switch between fixtures and Alpaca through configuration.
 
-- [ ] AAPL market frames can be recorded from Alpaca
-- [ ] The raw log is append-only and preserves exact received payloads
-- [ ] Live and replay feed the same engine interface
-- [ ] Prices use deterministic fixed-point arithmetic
-- [ ] One engine thread owns all trading state
-- [ ] Features have hand-calculated tests
-- [ ] Every proposal passes through risk
-- [ ] Simulated fills cannot use future information
-- [ ] Positions and P&L reconcile
-- [ ] Paper trading requires explicit two-step arming
-- [ ] Disconnects and stale data disable submission
-- [ ] Golden replay output is identical across repeated runs
-- [ ] Python produces an evaluation report
-- [ ] No secret or live-money endpoint is committed
+Alpaca SDK objects never escape the adapter.
 
-## After V1: market-making extension
+API keys never appear in logs or exceptions.
 
-Do not begin this until the V1 completion checklist passes.
+Missing pages, missing quotes and API failures return structured errors.
 
-1. Add a two-sided QuoteProposal containing bid and ask orders.
-2. Add resting-order tracking and cancel/replace behavior.
-3. Add inventory limits and inventory-based quote skew.
-4. Add a realistic queue-position and latency model.
-5. Measure spread capture, fill rate, adverse selection, and inventory P&L.
-6. Test on replay and paper trading before considering any live experiment.
+Chunk prompt
 
-Full-depth order-book data and realistic exchange queue modeling may require a
-different market-data provider. This extension remains a research project, not a
-promise of profit.
+Implement Chunk 4 from TASKS.md. Add fixture and Alpaca implementations of the
+market-data adapter, normalize stock and option snapshots into existing domain
+models, handle pagination and failures, and test with recorded responses. Do not
+submit orders or change the C++ recorder.
 
-## The first thing to do now
+Chunk 5 — End-to-end Streamlit analysis
 
-Start only with Chunk 0. Once its acceptance criteria pass, commit it and check
-off its tasks before prompting for Chunk 1.
+Goal
+
+Ship the first complete user workflow without order submission.
+
+Build
+
+Add inputs for ticker, shares, horizon, decline and budget
+
+Validate inputs before requesting data
+
+Call HedgeAnalysisService
+
+Display spot price, quote time and analysis assumptions
+
+Display eligible candidates in a comparison table
+
+Display excluded-contract counts and warnings
+
+Allow one candidate to be selected
+
+Plot unhedged and hedged expiration P&L
+
+Display premium, loss avoided and protection per dollar
+
+Handle empty results and service failures clearly
+
+Acceptance criteria
+
+A user can complete the full analysis with fixture data.
+
+The same workflow works with configured Alpaca data.
+
+The UI contains no duplicated payoff calculations.
+
+No button or code path can submit an order.
+
+Chunk prompt
+
+Implement Chunk 5 from TASKS.md. Build the complete Streamlit protective-put
+analysis workflow using existing services. Keep calculations outside UI code.
+Show assumptions, quote timestamps and warnings. Do not add order submission.
+
+Chunk 6 — Persistence and reproducibility
+
+Goal
+
+Save enough information to reproduce what the user saw after market prices change.
+
+Build
+
+Add SQLAlchemy and SQLite configuration
+
+Add analyses, candidates and paper_orders tables
+
+Store the input position, scenario and budget
+
+Store source quotes, timestamps and feed
+
+Store candidate metrics and warnings
+
+Add an analysis-history page
+
+Add schema migration support
+
+Keep credentials and account identifiers out of analysis records
+
+Acceptance criteria
+
+Reloading a saved analysis displays its original inputs and results.
+
+A historical analysis does not silently refresh using current prices.
+
+Database files are ignored by Git.
+
+Persistence failures do not submit or duplicate an order.
+
+Chunk 7 — Paper-order preview and submission
+
+Goal
+
+Allow a user to paper trade a selected protective put with a separate confirmation step.
+
+Build
+
+Add IPaperTradingAdapter
+
+Add AlpacaPaperTradingAdapter
+
+Reject any non-paper base URL in code
+
+Create an order preview from a saved candidate
+
+Revalidate quote age and budget before confirmation
+
+Require a separate explicit confirmation
+
+Submit a limit order, not an uncontrolled market order
+
+Generate an idempotent client order ID
+
+Persist request, response and status
+
+Prevent duplicate confirmation
+
+Support cancellation and status refresh
+
+Start in preview-only mode
+
+Acceptance criteria
+
+Live endpoints are rejected.
+
+Analysis cannot directly submit an order.
+
+Repeated confirmation cannot duplicate an order.
+
+Stale or changed quotes require a new preview.
+
+One controlled one-contract paper order can be submitted and cancelled manually.
+
+V1 completion checklist
+
+Manual stock position can be entered
+
+Current stock and put data can be retrieved
+
+Invalid and stale quotes are handled
+
+Protective puts are filtered by budget and expiration
+
+Scenario calculations have hand-verified tests
+
+At least three candidates can be compared when available
+
+Hedged and unhedged payoff lines are displayed
+
+Inputs, quotes and results can be saved
+
+Order preview is separate from submission
+
+Paper endpoint enforcement is tested
+
+No live-money endpoint or secret is committed
+
+Existing C++ recorder tests continue to pass
+
+Setup and demo steps work from a clean checkout
+
+Do not begin quantitative extensions until this checklist passes.
+
+Extension 1 — Put debit spreads
+
+Purpose
+
+Compare a cheaper hedge that caps protection below the short strike with a standalone protective put.
+
+Build
+
+Add PutSpreadGenerator
+
+Pair puts with the same underlying and expiration
+
+Buy the higher strike and sell the lower strike
+
+Calculate executable net debit from long ask minus short bid
+
+Calculate maximum payoff, maximum loss and scenario P&L
+
+Display both legs and capped protection clearly
+
+Add Alpaca multi-leg paper-order preview and submission
+
+Acceptance criteria
+
+Payoff is correct below, between and above the strikes.
+
+Maximum payoff equals strike width times multiplier.
+
+Maximum loss equals net debit.
+
+The spread respects the same budget and quote-quality pipeline as protective puts.
+
+Extension 2 — Alpaca portfolio import
+
+Purpose
+
+Replace repetitive manual entry with analysis of actual paper-account positions.
+
+Build
+
+Add Portfolio and PositionSnapshot
+
+Add AlpacaPortfolioAdapter
+
+Normalize equity and option positions
+
+Let the user select one imported position
+
+Save the portfolio snapshot with the analysis
+
+Keep manual entry available
+
+Acceptance criteria
+
+Imported values reconcile with the Alpaca paper account.
+
+Unknown asset types fail safely.
+
+Secrets and private account details do not enter logs.
+
+Imported and manual positions use the same analysis service.
+
+Extension 3 — Record option market data
+
+Purpose
+
+Build a replayable options dataset and reuse the existing C++ recorder.
+
+Build
+
+Generalize subscription configuration from one symbol to lists
+
+Support underlying and OCC option symbols
+
+Record option quote and trade frames without changing raw payloads
+
+Mark reconnect and gap boundaries
+
+Add sanitized option-message fixtures
+
+Build an offline option parser
+
+Write normalized processed data separately from raw data
+
+Acceptance criteria
+
+Existing AAPL equity recording remains compatible.
+
+Raw files remain append-only.
+
+Authentication frames and credentials cannot be recorded.
+
+The same recording can be parsed repeatedly into identical normalized output.
+
+Extension 4 — Historical bootstrap risk
+
+Purpose
+
+Replace one downside scenario with a distribution built from observed historical returns.
+
+Build
+
+Add SimulationEngine
+
+Add HistoricalBootstrapEngine
+
+Store training range, sample count and random seed
+
+Calculate probability of loss, VaR and expected shortfall
+
+Compare hedged and unhedged distributions
+
+Add chronological walk-forward evaluation
+
+Acceptance criteria
+
+Fixed seeds produce reproducible tests.
+
+No future observations enter a historical run.
+
+Results are compared with the deterministic scenario baseline.
+
+Prediction-interval coverage is reported.
+
+Extension 5 — Monte Carlo simulation
+
+Purpose
+
+Test hedge performance across generated price paths and explicit volatility assumptions.
+
+Build
+
+Implement vectorized NumPy geometric Brownian motion baseline
+
+Display drift, volatility, horizon and path-count assumptions
+
+Evaluate every existing candidate on identical paths
+
+Compare Monte Carlo with historical bootstrap results
+
+Benchmark before considering C++ acceleration
+
+Add pybind11 C++ computation only if profiling justifies it
+
+Acceptance criteria
+
+Simulated moments match configured parameters within tolerance.
+
+Fixed seeds are reproducible.
+
+Outputs are labeled as model estimates, not predictions.
+
+C++ is not added without a measured bottleneck and benchmark.
+
+Extension 6 — Correlation-aware portfolios
+
+Purpose
+
+Evaluate a multi-stock portfolio and determine whether an index or individual option provides effective protection.
+
+Build
+
+Align historical returns across holdings
+
+Estimate and validate covariance
+
+Generate correlated paths
+
+Reprice all holdings and hedge legs per path
+
+Compare SPY, QQQ and single-name hedge basis risk
+
+Add correlation stress controls
+
+Acceptance criteria
+
+Simulated correlations match target correlations within tolerance.
+
+Missing market dates are handled deterministically.
+
+Invalid covariance matrices are repaired or rejected visibly.
+
+Stress tests show the effect of increasing correlation.
+
+Extension 7 — Constrained hedge optimization
+
+Purpose
+
+Find cost-effective hedges after Vanta can evaluate many candidates across a loss distribution.
+
+Build
+
+Add HedgeOptimizer after candidate generation
+
+Minimize expected shortfall subject to budget and strategy constraints
+
+Reject low-quality quotes
+
+Compare against fixed-strike baseline hedges
+
+Display several cost-versus-protection frontier choices
+
+Preserve manual selection and explicit order confirmation
+
+Acceptance criteria
+
+No returned hedge violates its constraints.
+
+Infeasible requests return a clear explanation.
+
+Optimized results are compared out of sample with simple baselines.
+
+Optimization cannot place an order.
+
+Extension 8 — Volatility-regime classifier
+
+Purpose
+
+Test whether calm, ordinary and stressed environments require different simulation parameters.
+
+Build
+
+Create a versioned feature pipeline
+
+Begin with a rule-based volatility baseline
+
+Train an interpretable decision tree for the next volatility regime
+
+Use chronological train, validation and test periods
+
+Display the tree's decision path
+
+Feed the predicted regime into simulation parameters
+
+Compare calibration with and without conditioning
+
+Acceptance criteria
+
+The model predicts volatility regime, not exact stock direction.
+
+No random time-series split or future leakage is used.
+
+The tree beats documented naive baselines out of sample.
+
+Remove the feature if it does not improve calibration.
+
+Extension 9 — Hedge monitoring and lifecycle
+
+Purpose
+
+Track whether a purchased hedge continues to provide the protection originally modeled.
+
+Build
+
+Add hedge-position and lifecycle models
+
+Refresh underlying and option values
+
+Display current Greeks and remaining protection
+
+Reconcile order and position state after restart
+
+Track close, expiration, exercise and assignment events
+
+Add quote-staleness and expiration warnings
+
+Acceptance criteria
+
+Duplicate or out-of-order events cannot corrupt state.
+
+Local state reconciles with Alpaca after restart.
+
+Submitted does not mean filled.
+
+Unknown state disables further order actions.
+
+Deferred migration — FastAPI and React
+
+Do this only if Streamlit limits the validated product.
+
+Wrap existing application services in FastAPI
+
+Add a React/TypeScript client incrementally
+
+Migrate SQLite to PostgreSQL
+
+Add background workers for slow simulations only
+
+Add WebSockets for live order status only
+
+Preserve domain, calculation and adapter tests during migration
+
+The next task
+
+First push and verify the completed recorder checkpoint. Then implement only Chunk 1 — Python product foundation.
+
